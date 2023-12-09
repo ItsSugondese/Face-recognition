@@ -3,21 +3,33 @@ import face_recognition
 import pickle
 import os
 import shelve
+from csv_maker import MakeIt
 
+class NotAnIntegerError(Exception):
+    pass
 
 folderPath = 'unencoded-face'
 pathList = os.listdir(folderPath)
 imageDict = {}
 studentIds = []
 for path in pathList:
-    imageDict.update({os.path.splitext(path)[0] : face_recognition.load_image_file(os.path.join(folderPath, path))})
+    imageDict.update({path : face_recognition.load_image_file(os.path.join(folderPath, path))})
 
 def findEncoding(imageDict):
     encodingList = {}
     for student_id, images in imageDict.items():
             encoding = face_recognition.face_encodings(images)
             if encoding:
-                 encodingList[student_id] = encoding
+                stdId = str(os.path.splitext(student_id)[0])
+                
+                if not stdId.isdigit():
+                    raise Exception("Value not in numeric format")
+                encodingList[int(stdId)] = encoding[0]
+                os.rename("unencoded-face/" + student_id, "encoded-face/" + student_id)
+                csvMake = MakeIt()
+                csvMake.updateCSV(int(stdId))
+            else:
+                 os.rename("unencoded-face/" + student_id, "fail-encode/" + student_id)
             
             
     return encodingList
